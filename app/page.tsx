@@ -27,8 +27,6 @@ export default function Game876Scorer() {
   const [tempTricks, setTempTricks] = useState<Record<number, number>>({});
   const [gameStarted, setGameStarted] = useState(false);
 
-  // Generate round sequence: 8,7,6,5,4,3,2,1,1,2,3,4,5,6,7,8
-  // But adjust max cards based on number of players (52 cards / players)
   const getMaxCards = () => {
     if (players.length === 0) return 8;
     return Math.min(8, Math.floor(52 / players.length));
@@ -47,18 +45,15 @@ export default function Game876Scorer() {
     
     let sequence = [...descending, ...ascending];
     
-    // If sequence is less than 16 rounds, pad with max cards rounds
     if (sequence.length < 16) {
       const roundsNeeded = 16 - sequence.length;
       const roundsAtStart = Math.ceil(roundsNeeded / 2);
       const roundsAtEnd = roundsNeeded - roundsAtStart;
       
-      // Add rounds at the beginning
       for (let i = 0; i < roundsAtStart; i++) {
         sequence.unshift(maxCards);
       }
       
-      // Add rounds at the end
       for (let i = 0; i < roundsAtEnd; i++) {
         sequence.push(maxCards);
       }
@@ -71,7 +66,6 @@ export default function Game876Scorer() {
   const currentCards = roundSequence[currentRoundIndex];
   const dealerIndex = currentRoundIndex % players.length;
 
-// Reorder players so dealer is last
   const getOrderedPlayers = () => {
     if (players.length === 0) return [];
     const reordered: typeof players = [];
@@ -84,7 +78,7 @@ export default function Game876Scorer() {
 
   const addPlayer = () => {
     if (newPlayerName.trim()) {
-      const newPlayer = {
+      const newPlayer: Player = {
         id: Date.now(),
         name: newPlayerName.trim(),
         rounds: [],
@@ -95,7 +89,7 @@ export default function Game876Scorer() {
     }
   };
 
-const removePlayer = (id: number) => { {
+  const removePlayer = (id: number) => {
     if (players.length > 0 && !gameStarted) {
       setPlayers(players.filter(p => p.id !== id));
       const newTempBids = { ...tempBids };
@@ -110,11 +104,11 @@ const removePlayer = (id: number) => { {
     }
   };
 
-const updateBid = (playerId: number, bid: string) => { {
+  const updateBid = (playerId: number, bid: string) => {
     setTempBids({ ...tempBids, [playerId]: parseInt(bid) || 0 });
   };
-                                                      
-const updateTricks = (playerId: number, tricks: string) => { {
+
+  const updateTricks = (playerId: number, tricks: string) => {
     setTempTricks({ ...tempTricks, [playerId]: parseInt(tricks) || 0 });
   };
 
@@ -129,7 +123,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
   const canSubmitBids = () => {
     const totalBids = getTotalBids();
     const allBidsEntered = players.every(p => tempBids[p.id] !== undefined);
-    // For rounds with 1 or 2 cards, bids can equal the number of cards
     if (currentCards <= 2) {
       return allBidsEntered;
     }
@@ -144,7 +137,7 @@ const updateTricks = (playerId: number, tricks: string) => { {
 
   const submitBids = () => {
     if (canSubmitBids()) {
-      const initialTricks = {};
+      const initialTricks: Record<number, number> = {};
       players.forEach(p => {
         initialTricks[p.id] = 0;
       });
@@ -203,7 +196,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20">
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
               <Trophy className="text-yellow-400" size={40} />
@@ -214,18 +206,16 @@ const updateTricks = (playerId: number, tricks: string) => { {
             )}
           </div>
 
-          {/* Game Over */}
           {isGameOver ? (
             <>
               <div className="text-center mb-8">
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-8 mb-6">
                   <h2 className="text-4xl font-bold text-gray-900 mb-2">🎉 Game Over! 🎉</h2>
-                  <p className="text-2xl font-bold text-gray-800 mb-4">Winner: {leader.name}</p>
-                  <p className="text-xl text-gray-700">Final Score: {leader.total} points</p>
+                  <p className="text-2xl font-bold text-gray-800 mb-4">Winner: {leader?.name}</p>
+                  <p className="text-xl text-gray-700">Final Score: {leader?.total} points</p>
                 </div>
               </div>
 
-              {/* Final Score History */}
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-4">Final Scorecard</h3>
                 <div className="overflow-x-auto">
@@ -290,7 +280,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
             </>
           ) : !gameStarted ? (
             <>
-              {/* Setup Phase */}
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-4 text-center">Add Players</h3>
                 <div className="flex gap-2 mb-4">
@@ -346,7 +335,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
             </>
           ) : (
             <>
-              {/* Leader Board */}
               {leader && currentRoundIndex > 0 && (
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-4 mb-6 text-center">
                   <p className="text-gray-800 font-semibold text-sm mb-1">Current Leader</p>
@@ -354,7 +342,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
                 </div>
               )}
 
-              {/* Current Round Input */}
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-2 text-center">
                   {!bidsSubmitted ? '📝 Enter Bids' : '🎴 Enter Tricks Taken'}
@@ -459,7 +446,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
                 </div>
               </div>
 
-              {/* Score History */}
               {currentRoundIndex > 0 && (
                 <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                   <h3 className="text-2xl font-bold text-white mb-4">Score History</h3>
@@ -514,7 +500,6 @@ const updateTricks = (playerId: number, tricks: string) => { {
                 </div>
               )}
 
-              {/* Reset Button */}
               <div className="text-center">
                 <button
                   onClick={resetGame}
