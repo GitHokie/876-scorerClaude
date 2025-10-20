@@ -3,13 +3,28 @@
 import React, { useState } from 'react';
 import { Plus, Minus, RotateCcw, Users, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 
+interface Round {
+  cards: number;
+  bid: number;
+  tricks: number;
+  score: number;
+  madeIt: boolean;
+}
+
+interface Player {
+  id: number;
+  name: string;
+  rounds: Round[];
+  total: number;
+}
+
 export default function Game876Scorer() {
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bidsSubmitted, setBidsSubmitted] = useState(false);
-  const [tempBids, setTempBids] = useState({});
-  const [tempTricks, setTempTricks] = useState({});
+  const [tempBids, setTempBids] = useState<Record<number, number>>({});
+  const [tempTricks, setTempTricks] = useState<Record<number, number>>({});
   const [gameStarted, setGameStarted] = useState(false);
 
   // Generate round sequence: 8,7,6,5,4,3,2,1,1,2,3,4,5,6,7,8
