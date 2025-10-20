@@ -95,7 +95,7 @@ export default function Game876Scorer() {
     }
   };
 
-  const removePlayer = (id) => {
+const removePlayer = (id: number) => { {
     if (players.length > 0 && !gameStarted) {
       setPlayers(players.filter(p => p.id !== id));
       const newTempBids = { ...tempBids };
@@ -110,11 +110,11 @@ export default function Game876Scorer() {
     }
   };
 
-  const updateBid = (playerId, bid) => {
+const updateBid = (playerId: number, bid: string) => { {
     setTempBids({ ...tempBids, [playerId]: parseInt(bid) || 0 });
   };
-
-  const updateTricks = (playerId, tricks) => {
+                                                      
+const updateTricks = (playerId: number, tricks: string) => { {
     setTempTricks({ ...tempTricks, [playerId]: parseInt(tricks) || 0 });
   };
 
