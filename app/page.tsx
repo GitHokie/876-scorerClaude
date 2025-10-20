@@ -56,10 +56,10 @@ export default function Game876Scorer() {
   const currentCards = roundSequence[currentRoundIndex];
   const dealerIndex = currentRoundIndex % players.length;
 
-  // Reorder players so dealer is last
+// Reorder players so dealer is last
   const getOrderedPlayers = () => {
     if (players.length === 0) return [];
-    const reordered = [];
+    const reordered: typeof players = [];
     for (let i = 0; i < players.length; i++) {
       const index = (dealerIndex + 1 + i) % players.length;
       reordered.push(players[index]);
