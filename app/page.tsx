@@ -105,11 +105,25 @@ export default function Game876Scorer() {
   };
 
   const updateBid = (playerId: number, bid: string) => {
-    setTempBids({ ...tempBids, [playerId]: parseInt(bid) || 0 });
+    const value = bid === '' ? undefined : parseInt(bid) || 0;
+    const newBids = { ...tempBids };
+    if (value === undefined) {
+      delete newBids[playerId];
+    } else {
+      newBids[playerId] = value;
+    }
+    setTempBids(newBids);
   };
 
   const updateTricks = (playerId: number, tricks: string) => {
-    setTempTricks({ ...tempTricks, [playerId]: parseInt(tricks) || 0 });
+    const value = tricks === '' ? undefined : parseInt(tricks) || 0;
+    const newTricks = { ...tempTricks };
+    if (value === undefined) {
+      delete newTricks[playerId];
+    } else {
+      newTricks[playerId] = value;
+    }
+    setTempTricks(newTricks);
   };
 
   const getTotalBids = () => {
@@ -137,11 +151,7 @@ export default function Game876Scorer() {
 
   const submitBids = () => {
     if (canSubmitBids()) {
-      const initialTricks: Record<number, number> = {};
-      players.forEach(p => {
-        initialTricks[p.id] = 0;
-      });
-      setTempTricks(initialTricks);
+      setTempTricks({});
       setBidsSubmitted(true);
     }
   };
@@ -350,42 +360,44 @@ export default function Game876Scorer() {
                   Dealer: <span className="text-yellow-300 font-bold">{players[dealerIndex]?.name}</span>
                 </p>
                 
-                <div className="grid gap-4">
+                <div className="grid gap-2">
                   {getOrderedPlayers().map((player) => {
                     const isDealer = players.indexOf(player) === dealerIndex;
                     return (
-                      <div key={player.id} className="bg-white/10 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                        <div className="flex-1 text-white font-semibold text-base sm:text-lg flex items-center gap-2">
-                          {player.name}
-                          {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
+                      <div key={player.id} className="bg-white/10 rounded-lg p-3 flex items-center gap-2">
+                        <div className="flex-1 text-white font-semibold text-sm sm:text-base flex items-center gap-2 min-w-0">
+                          <span className="truncate">{player.name}</span>
+                          {isDealer && <span className="text-yellow-400 text-xs whitespace-nowrap">🃏</span>}
                         </div>
                         
                         {!bidsSubmitted ? (
-                          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                            <label className="text-blue-200 text-sm sm:text-base">Bid:</label>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <label className="text-blue-200 text-sm">Bid:</label>
                             <input
                               type="number"
                               min="0"
                               max={currentCards}
                               value={tempBids[player.id] !== undefined ? tempBids[player.id] : ''}
                               onChange={(e) => updateBid(player.id, e.target.value)}
-                              className="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
+                              placeholder=""
+                              className="w-14 px-2 py-1.5 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
                             />
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-end">
-                            <div className="text-blue-200 text-sm sm:text-base">
-                              Bid: <span className="text-white font-bold">{tempBids[player.id] || 0}</span>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="text-blue-200 text-sm">
+                              Bid: <span className="text-white font-bold">{tempBids[player.id] !== undefined ? tempBids[player.id] : ''}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <label className="text-blue-200 text-sm sm:text-base">Tricks:</label>
+                              <label className="text-blue-200 text-sm">Tricks:</label>
                               <input
                                 type="number"
                                 min="0"
                                 max={currentCards}
-                                value={tempTricks[player.id] || 0}
+                                value={tempTricks[player.id] !== undefined ? tempTricks[player.id] : ''}
                                 onChange={(e) => updateTricks(player.id, e.target.value)}
-                                className="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
+                                placeholder=""
+                                className="w-14 px-2 py-1.5 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
                               />
                             </div>
                           </div>
