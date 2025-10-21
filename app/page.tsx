@@ -197,12 +197,12 @@ export default function Game876Scorer() {
       <div className="max-w-6xl mx-auto">
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20">
           <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-              <Trophy className="text-yellow-400" size={40} />
-              876 Score Tracker
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-2 sm:gap-3">
+              <Trophy className="text-yellow-400" size={32} />
+              <span className="sm:inline">876 Score Tracker</span>
             </h1>
             {gameStarted && (
-              <p className="text-blue-200 text-lg">Round {currentRoundIndex + 1} of {roundSequence.length} • {currentCards} Cards</p>
+              <p className="text-blue-200 text-base sm:text-lg">Round {currentRoundIndex + 1} of {roundSequence.length} • {currentCards} Cards</p>
             )}
           </div>
 
@@ -282,18 +282,18 @@ export default function Game876Scorer() {
             <>
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-4 text-center">Add Players</h3>
-                <div className="flex gap-2 mb-4">
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
                   <input
                     type="text"
                     value={newPlayerName}
                     onChange={(e) => setNewPlayerName(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
                     placeholder="Enter player name..."
-                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
                   />
                   <button
                     onClick={addPlayer}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg"
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
                   >
                     <Users size={20} />
                     Add
@@ -354,41 +354,41 @@ export default function Game876Scorer() {
                   {getOrderedPlayers().map((player) => {
                     const isDealer = players.indexOf(player) === dealerIndex;
                     return (
-                      <div key={player.id} className="bg-white/10 rounded-xl p-4 flex items-center gap-4">
-                        <div className="flex-1 text-white font-semibold text-lg flex items-center gap-2">
+                      <div key={player.id} className="bg-white/10 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                        <div className="flex-1 text-white font-semibold text-base sm:text-lg flex items-center gap-2">
                           {player.name}
                           {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
                         </div>
                         
                         {!bidsSubmitted ? (
-                          <div className="flex items-center gap-2">
-                            <label className="text-blue-200">Bid:</label>
+                          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <label className="text-blue-200 text-sm sm:text-base">Bid:</label>
                             <input
                               type="number"
                               min="0"
                               max={currentCards}
                               value={tempBids[player.id] !== undefined ? tempBids[player.id] : ''}
                               onChange={(e) => updateBid(player.id, e.target.value)}
-                              className="w-20 px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              className="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
                             />
                           </div>
                         ) : (
-                          <>
-                            <div className="text-blue-200">
+                          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-end">
+                            <div className="text-blue-200 text-sm sm:text-base">
                               Bid: <span className="text-white font-bold">{tempBids[player.id] || 0}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <label className="text-blue-200">Tricks:</label>
+                              <label className="text-blue-200 text-sm sm:text-base">Tricks:</label>
                               <input
                                 type="number"
                                 min="0"
                                 max={currentCards}
                                 value={tempTricks[player.id] || 0}
                                 onChange={(e) => updateTricks(player.id, e.target.value)}
-                                className="w-20 px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                className="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
                               />
                             </div>
-                          </>
+                          </div>
                         )}
                       </div>
                     );
