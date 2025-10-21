@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, RotateCcw, Users, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Round {
@@ -26,6 +26,7 @@ export default function Game876Scorer() {
   const [tempBids, setTempBids] = useState<Record<number, number>>({});
   const [tempTricks, setTempTricks] = useState<Record<number, number>>({});
   const [gameStarted, setGameStarted] = useState(false);
+  const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const getMaxCards = () => {
     if (players.length === 0) return 8;
@@ -113,6 +114,18 @@ export default function Game876Scorer() {
       newBids[playerId] = value;
     }
     setTempBids(newBids);
+    
+    // Auto-focus next input after entering a digit
+    if (bid.length === 1 && value !== undefined) {
+      const orderedPlayers = getOrderedPlayers();
+      const currentIndex = orderedPlayers.findIndex(p => p.id === playerId);
+      if (currentIndex < orderedPlayers.length - 1) {
+        const nextPlayerId = orderedPlayers[currentIndex + 1].id;
+        setTimeout(() => {
+          inputRefs.current[nextPlayerId]?.focus();
+        }, 50);
+      }
+    }
   };
 
   const updateTricks = (playerId: number, tricks: string) => {
@@ -124,6 +137,18 @@ export default function Game876Scorer() {
       newTricks[playerId] = value;
     }
     setTempTricks(newTricks);
+    
+    // Auto-focus next input after entering a digit
+    if (tricks.length === 1 && value !== undefined) {
+      const orderedPlayers = getOrderedPlayers();
+      const currentIndex = orderedPlayers.findIndex(p => p.id === playerId);
+      if (currentIndex < orderedPlayers.length - 1) {
+        const nextPlayerId = orderedPlayers[currentIndex + 1].id;
+        setTimeout(() => {
+          inputRefs.current[nextPlayerId]?.focus();
+        }, 50);
+      }
+    }
   };
 
   const getTotalBids = () => {
@@ -155,6 +180,16 @@ export default function Game876Scorer() {
       setBidsSubmitted(true);
     }
   };
+
+  // Auto-focus first input when entering bids or tricks phase
+  useEffect(() => {
+    const orderedPlayers = getOrderedPlayers();
+    if (orderedPlayers.length > 0) {
+      setTimeout(() => {
+        inputRefs.current[orderedPlayers[0].id]?.focus();
+      }, 100);
+    }
+  }, [bidsSubmitted, currentRoundIndex]);
 
   const submitRound = () => {
     if (canSubmitRound()) {
@@ -374,6 +409,7 @@ export default function Game876Scorer() {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <label className="text-blue-200 text-sm">Bid:</label>
                             <input
+                              ref={(el) => (inputRefs.current[player.id] = el)}
                               type="number"
                               min="0"
                               max={currentCards}
@@ -391,6 +427,7 @@ export default function Game876Scorer() {
                             <div className="flex items-center gap-2">
                               <label className="text-blue-200 text-sm">Tricks:</label>
                               <input
+                                ref={(el) => (inputRefs.current[player.id] = el)}
                                 type="number"
                                 min="0"
                                 max={currentCards}
