@@ -409,7 +409,7 @@ export default function Game876Scorer() {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <label className="text-blue-200 text-sm">Bid:</label>
                             <input
-                              ref={(el) => (inputRefs.current[player.id] = el)}
+                              ref={(el) => { inputRefs.current[player.id] = el; }}
                               type="number"
                               min="0"
                               max={currentCards}
@@ -427,7 +427,7 @@ export default function Game876Scorer() {
                             <div className="flex items-center gap-2">
                               <label className="text-blue-200 text-sm">Tricks:</label>
                               <input
-                                ref={(el) => (inputRefs.current[player.id] = el)}
+                                ref={(el) => { inputRefs.current[player.id] = el; }}
                                 type="number"
                                 min="0"
                                 max={currentCards}
