@@ -159,6 +159,35 @@ export default function Game876Scorer() {
     return Object.values(tempTricks).reduce((sum, tricks) => sum + tricks, 0);
   };
 
+  const allNonDealerBidsEntered = () => {
+    const dealer = players[dealerIndex];
+    if (!dealer) return false;
+
+    // Check if all players except dealer have entered bids
+    const nonDealerPlayers = players.filter((_, index) => index !== dealerIndex);
+    return nonDealerPlayers.every(p => tempBids[p.id] !== undefined);
+  };
+
+  const getForbiddenDealerBid = () => {
+    if (currentCards <= 2) return null; // No restriction for 1-2 card rounds
+
+    const dealer = players[dealerIndex];
+    if (!dealer) return null;
+
+    // Calculate total of non-dealer bids
+    const nonDealerTotal = players
+      .filter((_, index) => index !== dealerIndex)
+      .reduce((sum, p) => sum + (tempBids[p.id] || 0), 0);
+
+    const forbiddenBid = currentCards - nonDealerTotal;
+
+    // Only return if it's a valid bid (0 to currentCards)
+    if (forbiddenBid >= 0 && forbiddenBid <= currentCards) {
+      return forbiddenBid;
+    }
+    return null;
+  };
+
   const canSubmitBids = () => {
     const totalBids = getTotalBids();
     const allBidsEntered = players.every(p => tempBids[p.id] !== undefined);
@@ -455,6 +484,29 @@ export default function Game876Scorer() {
                         </div>
                       )}
                     </div>
+                    {allNonDealerBidsEntered() && tempBids[players[dealerIndex]?.id] === undefined && (
+                      <div className="bg-yellow-500/20 border border-yellow-400/50 rounded-lg p-3 mt-3">
+                        <div className="text-yellow-200 text-center">
+                          {(() => {
+                            const forbiddenBid = getForbiddenDealerBid();
+                            const dealer = players[dealerIndex];
+                            if (forbiddenBid !== null) {
+                              return (
+                                <div>
+                                  <span className="font-bold">{dealer?.name}</span>, you cannot bid <span className="font-bold text-yellow-300">{forbiddenBid}</span> (would equal {currentCards} total)
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div>
+                                  <span className="font-bold">{dealer?.name}</span>, the total already exceeds {currentCards} - you can bid anything!
+                                </div>
+                              );
+                            }
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
