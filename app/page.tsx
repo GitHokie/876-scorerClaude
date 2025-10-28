@@ -225,9 +225,13 @@ export default function Game876Scorer() {
 
   const getLeader = () => {
     if (players.length === 0) return null;
-    return players.reduce((leader, player) => 
+    return players.reduce((leader, player) =>
       player.total > leader.total ? player : leader
     , players[0]);
+  };
+
+  const getSortedPlayers = () => {
+    return [...players].sort((a, b) => b.total - a.total);
   };
 
   const leader = getLeader();
@@ -380,10 +384,20 @@ export default function Game876Scorer() {
             </>
           ) : (
             <>
-              {leader && currentRoundIndex > 0 && (
-                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-4 mb-6 text-center">
-                  <p className="text-gray-800 font-semibold text-sm mb-1">Current Leader</p>
-                  <p className="text-2xl font-bold text-gray-900">{leader.name}: {leader.total} points</p>
+              {currentRoundIndex > 0 && (
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-4 mb-6">
+                  <p className="text-gray-800 font-semibold text-sm mb-3 text-center">Scoreboard</p>
+                  <div className="space-y-2">
+                    {getSortedPlayers().map((player, index) => (
+                      <div key={player.id} className="flex items-center justify-between bg-white/20 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-900 font-bold text-lg w-6">{index + 1}.</span>
+                          <span className="text-gray-900 font-semibold">{player.name}</span>
+                        </div>
+                        <span className="text-gray-900 font-bold">{player.total} pts</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
