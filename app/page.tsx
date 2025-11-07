@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Plus, Minus, RotateCcw, Users, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Round {
@@ -16,6 +16,7 @@ interface Player {
   name: string;
   rounds: Round[];
   total: number;
+  dbId?: number;
 }
 
 export default function Game876Scorer() {
@@ -26,7 +27,7 @@ export default function Game876Scorer() {
   const [tempBids, setTempBids] = useState<Record<number, number>>({});
   const [tempTricks, setTempTricks] = useState<Record<number, number>>({});
   const [gameStarted, setGameStarted] = useState(false);
-  const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const [currentGameId, setCurrentGameId] = useState<number | null>(null);
 
   const getMaxCards = () => {
     if (players.length === 0) return 8;
@@ -99,56 +100,51 @@ export default function Game876Scorer() {
     }
   };
 
-  const startGame = () => {
+  const startGame = async () => {
     if (players.length >= 4) {
-      setGameStarted(true);
+      try {
+        // Create game in database
+        const response = await fetch('/api/games/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            players: players.map(p => ({ name: p.name })),
+            maxCards: getMaxCards(),
+            totalRounds: roundSequence.length
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          setCurrentGameId(data.gameId);
+          
+          // Update players with database IDs
+          const updatedPlayers = players.map((p, idx) => ({
+            ...p,
+            dbId: data.players[idx].dbId
+          }));
+          setPlayers(updatedPlayers);
+          setGameStarted(true);
+        } else {
+          console.error('Failed to create game:', data.error);
+          alert('Failed to save game to database, but you can continue playing.');
+          setGameStarted(true);
+        }
+      } catch (error) {
+        console.error('Error starting game:', error);
+        alert('Failed to save game to database, but you can continue playing.');
+        setGameStarted(true);
+      }
     }
   };
 
   const updateBid = (playerId: number, bid: string) => {
-    const value = bid === '' ? undefined : parseInt(bid) || 0;
-    const newBids = { ...tempBids };
-    if (value === undefined) {
-      delete newBids[playerId];
-    } else {
-      newBids[playerId] = value;
-    }
-    setTempBids(newBids);
-    
-    // Auto-focus next input after entering a digit
-    if (bid.length === 1 && value !== undefined) {
-      const orderedPlayers = getOrderedPlayers();
-      const currentIndex = orderedPlayers.findIndex(p => p.id === playerId);
-      if (currentIndex < orderedPlayers.length - 1) {
-        const nextPlayerId = orderedPlayers[currentIndex + 1].id;
-        setTimeout(() => {
-          inputRefs.current[nextPlayerId]?.focus();
-        }, 50);
-      }
-    }
+    setTempBids({ ...tempBids, [playerId]: parseInt(bid) || 0 });
   };
 
   const updateTricks = (playerId: number, tricks: string) => {
-    const value = tricks === '' ? undefined : parseInt(tricks) || 0;
-    const newTricks = { ...tempTricks };
-    if (value === undefined) {
-      delete newTricks[playerId];
-    } else {
-      newTricks[playerId] = value;
-    }
-    setTempTricks(newTricks);
-    
-    // Auto-focus next input after entering a digit
-    if (tricks.length === 1 && value !== undefined) {
-      const orderedPlayers = getOrderedPlayers();
-      const currentIndex = orderedPlayers.findIndex(p => p.id === playerId);
-      if (currentIndex < orderedPlayers.length - 1) {
-        const nextPlayerId = orderedPlayers[currentIndex + 1].id;
-        setTimeout(() => {
-          inputRefs.current[nextPlayerId]?.focus();
-        }, 50);
-      }
-    }
+    setTempTricks({ ...tempTricks, [playerId]: parseInt(tricks) || 0 });
   };
 
   const getTotalBids = () => {
@@ -176,22 +172,16 @@ export default function Game876Scorer() {
 
   const submitBids = () => {
     if (canSubmitBids()) {
-      setTempTricks({});
+      const initialTricks: Record<number, number> = {};
+      players.forEach(p => {
+        initialTricks[p.id] = 0;
+      });
+      setTempTricks(initialTricks);
       setBidsSubmitted(true);
     }
   };
 
-  // Auto-focus first input when entering bids or tricks phase
-  useEffect(() => {
-    const orderedPlayers = getOrderedPlayers();
-    if (orderedPlayers.length > 0) {
-      setTimeout(() => {
-        inputRefs.current[orderedPlayers[0].id]?.focus();
-      }, 100);
-    }
-  }, [bidsSubmitted, currentRoundIndex]);
-
-  const submitRound = () => {
+  const submitRound = async () => {
     if (canSubmitRound()) {
       const updatedPlayers = players.map(p => {
         const bid = tempBids[p.id] || 0;
@@ -206,11 +196,51 @@ export default function Game876Scorer() {
         };
       });
 
+      // Save round to database
+      if (currentGameId) {
+        try {
+          const playerResults = updatedPlayers.map(p => {
+            const lastRound = p.rounds[p.rounds.length - 1];
+            return {
+              playerId: p.dbId,
+              bid: lastRound.bid,
+              tricks: lastRound.tricks,
+              score: lastRound.score,
+              madeIt: lastRound.madeIt
+            };
+          });
+
+          await fetch(`/api/games/${currentGameId}/round`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roundNumber: currentRoundIndex + 1,
+              cards: currentCards,
+              playerResults
+            })
+          });
+        } catch (error) {
+          console.error('Error saving round:', error);
+        }
+      }
+
       setPlayers(updatedPlayers);
-      setCurrentRoundIndex(currentRoundIndex + 1);
+      const nextRound = currentRoundIndex + 1;
+      setCurrentRoundIndex(nextRound);
       setTempBids({});
       setTempTricks({});
       setBidsSubmitted(false);
+
+      // Check if game is complete
+      if (nextRound >= roundSequence.length && currentGameId) {
+        try {
+          await fetch(`/api/games/${currentGameId}/complete`, {
+            method: 'POST'
+          });
+        } catch (error) {
+          console.error('Error completing game:', error);
+        }
+      }
     }
   };
 
@@ -221,17 +251,14 @@ export default function Game876Scorer() {
     setTempTricks({});
     setBidsSubmitted(false);
     setGameStarted(false);
+    setCurrentGameId(null);
   };
 
   const getLeader = () => {
     if (players.length === 0) return null;
-    return players.reduce((leader, player) =>
+    return players.reduce((leader, player) => 
       player.total > leader.total ? player : leader
     , players[0]);
-  };
-
-  const getSortedPlayers = () => {
-    return [...players].sort((a, b) => b.total - a.total);
   };
 
   const leader = getLeader();
@@ -246,12 +273,12 @@ export default function Game876Scorer() {
       <div className="max-w-6xl mx-auto">
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20">
           <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-2 sm:gap-3">
-              <Trophy className="text-yellow-400" size={32} />
-              <span className="sm:inline">876 Score Tracker</span>
+            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+              <Trophy className="text-yellow-400" size={40} />
+              876 Score Tracker
             </h1>
             {gameStarted && (
-              <p className="text-blue-200 text-base sm:text-lg">Round {currentRoundIndex + 1} of {roundSequence.length} • {currentCards} Cards</p>
+              <p className="text-blue-200 text-lg">Round {currentRoundIndex + 1} of {roundSequence.length} • {currentCards} Cards</p>
             )}
           </div>
 
@@ -331,18 +358,18 @@ export default function Game876Scorer() {
             <>
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-4 text-center">Add Players</h3>
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <div className="flex gap-2 mb-4">
                   <input
                     type="text"
                     value={newPlayerName}
                     onChange={(e) => setNewPlayerName(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
                     placeholder="Enter player name..."
-                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
+                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                   <button
                     onClick={addPlayer}
-                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg"
                   >
                     <Users size={20} />
                     Add
@@ -384,20 +411,10 @@ export default function Game876Scorer() {
             </>
           ) : (
             <>
-              {currentRoundIndex > 0 && (
-                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-4 mb-6">
-                  <p className="text-gray-800 font-semibold text-sm mb-3 text-center">Scoreboard</p>
-                  <div className="space-y-2">
-                    {getSortedPlayers().map((player, index) => (
-                      <div key={player.id} className="flex items-center justify-between bg-white/20 rounded-lg px-3 py-2">
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-900 font-bold text-lg w-6">{index + 1}.</span>
-                          <span className="text-gray-900 font-semibold">{player.name}</span>
-                        </div>
-                        <span className="text-gray-900 font-bold">{player.total} pts</span>
-                      </div>
-                    ))}
-                  </div>
+              {leader && currentRoundIndex > 0 && (
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-4 mb-6 text-center">
+                  <p className="text-gray-800 font-semibold text-sm mb-1">Current Leader</p>
+                  <p className="text-2xl font-bold text-gray-900">{leader.name}: {leader.total} points</p>
                 </div>
               )}
 
@@ -409,49 +426,45 @@ export default function Game876Scorer() {
                   Dealer: <span className="text-yellow-300 font-bold">{players[dealerIndex]?.name}</span>
                 </p>
                 
-                <div className="grid gap-2">
+                <div className="grid gap-4">
                   {getOrderedPlayers().map((player) => {
                     const isDealer = players.indexOf(player) === dealerIndex;
                     return (
-                      <div key={player.id} className="bg-white/10 rounded-lg p-3 flex items-center gap-2">
-                        <div className="flex-1 text-white font-semibold text-sm sm:text-base flex items-center gap-2 min-w-0">
-                          <span className="truncate">{player.name}</span>
-                          {isDealer && <span className="text-yellow-400 text-xs whitespace-nowrap">🃏</span>}
+                      <div key={player.id} className="bg-white/10 rounded-xl p-4 flex items-center gap-4">
+                        <div className="flex-1 text-white font-semibold text-lg flex items-center gap-2">
+                          {player.name}
+                          {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
                         </div>
                         
                         {!bidsSubmitted ? (
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <label className="text-blue-200 text-sm">Bid:</label>
+                          <div className="flex items-center gap-2">
+                            <label className="text-blue-200">Bid:</label>
                             <input
-                              ref={(el) => { inputRefs.current[player.id] = el; }}
                               type="number"
                               min="0"
                               max={currentCards}
                               value={tempBids[player.id] !== undefined ? tempBids[player.id] : ''}
                               onChange={(e) => updateBid(player.id, e.target.value)}
-                              placeholder=""
-                              className="w-14 px-2 py-1.5 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
+                              className="w-20 px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            <div className="text-blue-200 text-sm">
-                              Bid: <span className="text-white font-bold">{tempBids[player.id] !== undefined ? tempBids[player.id] : ''}</span>
+                          <>
+                            <div className="text-blue-200">
+                              Bid: <span className="text-white font-bold">{tempBids[player.id] || 0}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <label className="text-blue-200 text-sm">Tricks:</label>
+                              <label className="text-blue-200">Tricks:</label>
                               <input
-                                ref={(el) => { inputRefs.current[player.id] = el; }}
                                 type="number"
                                 min="0"
                                 max={currentCards}
-                                value={tempTricks[player.id] !== undefined ? tempTricks[player.id] : ''}
+                                value={tempTricks[player.id] || 0}
                                 onChange={(e) => updateTricks(player.id, e.target.value)}
-                                placeholder=""
-                                className="w-14 px-2 py-1.5 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
+                                className="w-20 px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                               />
                             </div>
-                          </div>
+                          </>
                         )}
                       </div>
                     );
