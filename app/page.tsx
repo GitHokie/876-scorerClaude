@@ -10,7 +10,7 @@ interface Round {
   tricks: number;
   score: number;
   madeIt: boolean;
-}
+}f
 
 interface Player {
   id: number;
@@ -608,15 +608,27 @@ export default function Game876Scorer() {
                         : tempTricks[player.id] !== undefined && tempTricks[player.id] > 0;
                       
                       return (
-                        <div 
-                          key={player.id} 
-                          className={`rounded-xl p-4 flex items-center gap-4 transition-all ${
+                        <button
+                          key={player.id}
+                          onClick={() => {
+                            // Clear the value so user can re-enter
+                            if (!bidsSubmitted) {
+                              const newBids = { ...tempBids };
+                              delete newBids[player.id];
+                              setTempBids(newBids);
+                            } else {
+                              const newTricks = { ...tempTricks };
+                              newTricks[player.id] = 0;
+                              setTempTricks(newTricks);
+                            }
+                          }}
+                          className={`w-full rounded-xl p-4 flex items-center gap-4 transition-all ${
                             hasValue 
-                              ? 'bg-green-500/20 border-2 border-green-400/50' 
-                              : 'bg-white/10 border-2 border-white/20'
+                              ? 'bg-green-500/20 border-2 border-green-400/50 hover:bg-green-500/30' 
+                              : 'bg-white/10 border-2 border-white/20 hover:bg-white/20'
                           }`}
                         >
-                          <div className="flex-1">
+                          <div className="flex-1 text-left">
                             <div className="text-white font-semibold text-lg flex items-center gap-2">
                               {player.name}
                               {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
@@ -632,21 +644,29 @@ export default function Game876Scorer() {
                                 )}
                               </div>
                             )}
+                            {hasValue && (
+                              <div className="text-green-300 text-xs mt-1 italic">
+                                Tap to edit
+                              </div>
+                            )}
                           </div>
                           
-                          {hasValue && (
+                          {hasValue ? (
                             <div className="flex items-center gap-2">
-                              <CheckCircle className="text-green-400" size={24} />
                               <span className="text-white font-bold text-2xl">
                                 {!bidsSubmitted ? tempBids[player.id] : tempTricks[player.id]}
                               </span>
+                              <CheckCircle className="text-green-400" size={24} />
+                            </div>
+                          ) : (
+                            <div className="text-blue-200 text-sm">
+                              Waiting...
                             </div>
                           )}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
-                </div>
 
                 {!bidsSubmitted && (
                   <div className="mt-4">
