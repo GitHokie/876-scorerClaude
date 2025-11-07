@@ -564,49 +564,88 @@ export default function Game876Scorer() {
                   Dealer: <span className="text-yellow-300 font-bold">{players[dealerIndex]?.name}</span>
                 </p>
                 
-                <div className="grid gap-4">
-                  {getOrderedPlayers().map((player) => {
-                    const isDealer = players.indexOf(player) === dealerIndex;
-                    return (
-                      <div key={player.id} className="bg-white/10 rounded-xl p-4 flex items-center gap-4">
-                        <div className="flex-1 text-white font-semibold text-lg flex items-center gap-2">
-                          {player.name}
-                          {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
-                        </div>
-                        
-                        {!bidsSubmitted ? (
-                          <div className="flex items-center gap-2">
-                            <label className="text-blue-200">Bid:</label>
-                            <input
-                              type="number"
-                              min="0"
-                              max={currentCards}
-                              value={tempBids[player.id] !== undefined ? tempBids[player.id] : ''}
-                              onChange={(e) => updateBid(player.id, e.target.value)}
-                              className="w-20 px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
+<div className="mb-6">
+                  {/* Number Buttons */}
+                  <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
+                    <p className="text-blue-200 text-sm text-center mb-3">
+                      Tap a number to enter {!bidsSubmitted ? 'bid' : 'tricks'}:
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {Array.from({ length: currentCards + 1 }, (_, i) => i).map((num) => (
+                        <button
+                          key={num}
+                          onClick={() => {
+                            const orderedPlayers = getOrderedPlayers();
+                            // Find first player without value
+                            const nextPlayer = orderedPlayers.find(p => 
+                              !bidsSubmitted 
+                                ? tempBids[p.id] === undefined 
+                                : tempTricks[p.id] === undefined || tempTricks[p.id] === 0
+                            );
+                            
+                            if (nextPlayer) {
+                              if (!bidsSubmitted) {
+                                updateBid(nextPlayer.id, num.toString());
+                              } else {
+                                updateTricks(nextPlayer.id, num.toString());
+                              }
+                            }
+                          }}
+                          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-bold text-2xl shadow-lg transition-all active:scale-95"
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Players List */}
+                  <div className="space-y-3">
+                    {getOrderedPlayers().map((player) => {
+                      const isDealer = players.indexOf(player) === dealerIndex;
+                      const hasValue = !bidsSubmitted 
+                        ? tempBids[player.id] !== undefined 
+                        : tempTricks[player.id] !== undefined && tempTricks[player.id] > 0;
+                      
+                      return (
+                        <div 
+                          key={player.id} 
+                          className={`rounded-xl p-4 flex items-center gap-4 transition-all ${
+                            hasValue 
+                              ? 'bg-green-500/20 border-2 border-green-400/50' 
+                              : 'bg-white/10 border-2 border-white/20'
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <div className="text-white font-semibold text-lg flex items-center gap-2">
+                              {player.name}
+                              {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
+                            </div>
+                            {!bidsSubmitted && tempBids[player.id] !== undefined && (
+                              <div className="text-blue-200 text-sm">Bid: {tempBids[player.id]}</div>
+                            )}
+                            {bidsSubmitted && (
+                              <div className="text-blue-200 text-sm">
+                                Bid: {tempBids[player.id] || 0}
+                                {tempTricks[player.id] !== undefined && tempTricks[player.id] > 0 && (
+                                  <span> • Tricks: {tempTricks[player.id]}</span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <>
-                            <div className="text-blue-200">
-                              Bid: <span className="text-white font-bold">{tempBids[player.id] || 0}</span>
-                            </div>
+                          
+                          {hasValue && (
                             <div className="flex items-center gap-2">
-                              <label className="text-blue-200">Tricks:</label>
-                              <input
-                                type="number"
-                                min="0"
-                                max={currentCards}
-                                value={tempTricks[player.id] || 0}
-                                onChange={(e) => updateTricks(player.id, e.target.value)}
-                                className="w-20 px-3 py-2 text-center rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                              />
+                              <CheckCircle className="text-green-400" size={24} />
+                              <span className="text-white font-bold text-2xl">
+                                {!bidsSubmitted ? tempBids[player.id] : tempTricks[player.id]}
+                              </span>
                             </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {!bidsSubmitted && (
@@ -658,7 +697,6 @@ export default function Game876Scorer() {
                     </button>
                   )}
                 </div>
-              </div>
 
               {currentRoundIndex > 0 && (
                 <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
