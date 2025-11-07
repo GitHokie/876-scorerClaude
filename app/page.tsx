@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Minus, RotateCcw, Users, Trophy, CheckCircle, AlertCircle, History, UserPlus } from 'lucide-react';
 import Link from 'next/link';
-import { Plus, Minus, RotateCcw, Users, Trophy, CheckCircle, AlertCircle, History } from 'lucide-react';
 
 interface Round {
   cards: number;
@@ -20,8 +20,16 @@ interface Player {
   dbId?: number;
 }
 
+interface RegisteredPlayer {
+  id: number;
+  name: string;
+  last_played: string | null;
+}
+
 export default function Game876Scorer() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [registeredPlayers, setRegisteredPlayers] = useState<RegisteredPlayer[]>([]);
+  const [selectedPlayerNames, setSelectedPlayerNames] = useState<string[]>([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bidsSubmitted, setBidsSubmitted] = useState(false);
@@ -29,6 +37,66 @@ export default function Game876Scorer() {
   const [tempTricks, setTempTricks] = useState<Record<number, number>>({});
   const [gameStarted, setGameStarted] = useState(false);
   const [currentGameId, setCurrentGameId] = useState<number | null>(null);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+
+  useEffect(() => {
+    fetchRegisteredPlayers();
+  }, []);
+
+  const fetchRegisteredPlayers = async () => {
+    try {
+      const response = await fetch('/api/players');
+      const data = await response.json();
+      if (response.ok) {
+        setRegisteredPlayers(data.players);
+      }
+    } catch (error) {
+      console.error('Error fetching players:', error);
+    }
+  };
+
+  const togglePlayerSelection = (playerName: string) => {
+    if (selectedPlayerNames.includes(playerName)) {
+      setSelectedPlayerNames(selectedPlayerNames.filter(n => n !== playerName));
+    } else {
+      setSelectedPlayerNames([...selectedPlayerNames, playerName]);
+    }
+  };
+
+  const addNewPlayer = async () => {
+    if (newPlayerName.trim()) {
+      try {
+        const response = await fetch('/api/players', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newPlayerName.trim() })
+        });
+
+        if (response.ok) {
+          await fetchRegisteredPlayers();
+          setSelectedPlayerNames([...selectedPlayerNames, newPlayerName.trim()]);
+          setNewPlayerName('');
+          setShowAddPlayer(false);
+        } else {
+          const data = await response.json();
+          alert(data.error || 'Failed to add player');
+        }
+      } catch (error) {
+        console.error('Error adding player:', error);
+        alert('Failed to add player');
+      }
+    }
+  };
+
+  const confirmPlayerSelection = () => {
+    const selectedPlayers = selectedPlayerNames.map((name, index) => ({
+      id: Date.now() + index,
+      name: name,
+      rounds: [],
+      total: 0
+    }));
+    setPlayers(selectedPlayers);
+  };
 
   const getMaxCards = () => {
     if (players.length === 0) return 8;
@@ -79,31 +147,23 @@ export default function Game876Scorer() {
     return reordered;
   };
 
-  const addPlayer = () => {
-    if (newPlayerName.trim()) {
-      const newPlayer: Player = {
-        id: Date.now(),
-        name: newPlayerName.trim(),
-        rounds: [],
-        total: 0
-      };
-      setPlayers([...players, newPlayer]);
-      setNewPlayerName('');
-    }
-  };
-
-  const removePlayer = (id: number) => {
-    if (players.length > 0 && !gameStarted) {
-      setPlayers(players.filter(p => p.id !== id));
-      const newTempBids = { ...tempBids };
-      delete newTempBids[id];
-      setTempBids(newTempBids);
+  const removePlayer = (playerName: string) => {
+    setSelectedPlayerNames(selectedPlayerNames.filter(n => n !== playerName));
+    if (players.length > 0) {
+      setPlayers(players.filter(p => p.name !== playerName));
     }
   };
 
   const startGame = async () => {
     if (players.length >= 4) {
       try {
+        // Update last_played for all selected players
+        await fetch('/api/players/update-last-played', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerNames: selectedPlayerNames })
+        });
+
         // Create game in database
         const response = await fetch('/api/games/create', {
           method: 'POST',
@@ -247,6 +307,7 @@ export default function Game876Scorer() {
 
   const resetGame = () => {
     setPlayers([]);
+    setSelectedPlayerNames([]);
     setCurrentRoundIndex(0);
     setTempBids({});
     setTempTricks({});
@@ -367,55 +428,122 @@ export default function Game876Scorer() {
           ) : !gameStarted ? (
             <>
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
-                <h3 className="text-2xl font-bold text-white mb-4 text-center">Add Players</h3>
-                <div className="flex gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-                    placeholder="Enter player name..."
-                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                  <button
-                    onClick={addPlayer}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg"
-                  >
-                    <Users size={20} />
-                    Add
-                  </button>
-                </div>
-
-                {players.length > 0 && (
-                  <div className="space-y-2 mb-4">
-                    {players.map((player, index) => (
-                      <div key={player.id} className="bg-white/10 rounded-xl p-3 flex items-center justify-between">
-                        <span className="text-white font-semibold">
-                          {index + 1}. {player.name}
-                        </span>
-                        <button
-                          onClick={() => removePlayer(player.id)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <Minus size={20} />
-                        </button>
-                      </div>
+                <h3 className="text-2xl font-bold text-white mb-4 text-center">Select Players</h3>
+                
+                {/* Player Selection Grid */}
+                {registeredPlayers.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                    {registeredPlayers.map((player) => (
+                      <button
+                        key={player.id}
+                        onClick={() => togglePlayerSelection(player.name)}
+                        className={`
+                          p-4 rounded-xl font-semibold transition-all border-2
+                          ${selectedPlayerNames.includes(player.name)
+                            ? 'bg-blue-500 border-blue-400 text-white'
+                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          {selectedPlayerNames.includes(player.name) && <CheckCircle size={20} />}
+                          {player.name}
+                        </div>
+                      </button>
                     ))}
                   </div>
                 )}
 
-                {players.length >= 4 && (
+                {/* Add New Player Section */}
+                {!showAddPlayer ? (
                   <button
-                    onClick={startGame}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    onClick={() => setShowAddPlayer(true)}
+                    className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-dashed border-white/30 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                   >
-                    <CheckCircle size={20} />
-                    Start Game
+                    <UserPlus size={20} />
+                    Add New Player
                   </button>
+                ) : (
+                  <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={newPlayerName}
+                        onChange={(e) => setNewPlayerName(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && addNewPlayer()}
+                        placeholder="Enter new player name..."
+                        className="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        autoFocus
+                      />
+                      <button
+                        onClick={addNewPlayer}
+                        className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-all"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddPlayer(false);
+                          setNewPlayerName('');
+                        }}
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 )}
 
-                {players.length < 4 && players.length > 0 && (
-                  <p className="text-yellow-300 text-center text-sm">Add at least 4 players to start</p>
+                {/* Selected Players List */}
+                {selectedPlayerNames.length > 0 && players.length === 0 && (
+                  <div className="mt-4">
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4">
+                      <h4 className="text-white font-semibold mb-3">
+                        Selected Players ({selectedPlayerNames.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedPlayerNames.map((name) => (
+                          <div key={name} className="flex items-center justify-between bg-white/10 rounded-lg p-2">
+                            <span className="text-white font-semibold">{name}</span>
+                            <button
+                              onClick={() => removePlayer(name)}
+                              className="text-red-400 hover:text-red-300 transition-colors"
+                            >
+                              <Minus size={20} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={confirmPlayerSelection}
+                      disabled={selectedPlayerNames.length < 4}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <Users size={20} />
+                      Confirm Players
+                    </button>
+
+                    {selectedPlayerNames.length < 4 && (
+                      <p className="text-yellow-300 text-center text-sm mt-2">
+                        Select at least 4 players to continue
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Start Game Button */}
+                {players.length >= 4 && (
+                  <div className="mt-4">
+                    <button
+                      onClick={startGame}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <CheckCircle size={20} />
+                      Start Game
+                    </button>
+                  </div>
                 )}
               </div>
             </>
