@@ -10,7 +10,7 @@ interface Round {
   tricks: number;
   score: number;
   madeIt: boolean;
-}f
+}
 
 interface Player {
   id: number;
@@ -667,6 +667,7 @@ export default function Game876Scorer() {
                       );
                     })}
                   </div>
+                </div>
 
                 {!bidsSubmitted && (
                   <div className="mt-4">
