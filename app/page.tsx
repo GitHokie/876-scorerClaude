@@ -564,7 +564,7 @@ export default function Game876Scorer() {
                   Dealer: <span className="text-yellow-300 font-bold">{players[dealerIndex]?.name}</span>
                 </p>
                 
-<div className="mb-6">
+                <div className="mb-6">
                   {/* Number Buttons */}
                   <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
                     <p className="text-blue-200 text-sm text-center mb-3">
@@ -697,6 +697,7 @@ export default function Game876Scorer() {
                     </button>
                   )}
                 </div>
+              </div>
 
               {currentRoundIndex > 0 && (
                 <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
