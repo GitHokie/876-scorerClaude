@@ -550,9 +550,9 @@ export default function Game876Scorer() {
           ) : (
             <>
               {currentRoundIndex > 0 && (
-                <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
-                  <h3 className="text-2xl font-bold text-white mb-4 text-center">Leaderboard</h3>
-                  <div className="space-y-2">
+                <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10">
+                  <h3 className="text-xl font-bold text-white mb-3 text-center">Leaderboard</h3>
+                  <div className="space-y-1">
                     {[...players]
                       .sort((a, b) => b.total - a.total)
                       .map((player, index) => {
@@ -560,37 +560,28 @@ export default function Game876Scorer() {
                         return (
                           <div
                             key={player.id}
-                            className={`rounded-xl p-4 flex items-center gap-4 ${
+                            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
                               isLeader
-                                ? 'bg-gradient-to-r from-yellow-400/20 to-orange-400/20 border-2 border-yellow-400'
-                                : 'bg-white/10'
+                                ? 'bg-yellow-400/20 text-yellow-300'
+                                : 'bg-white/5 text-white'
                             }`}
                           >
-                            <div className="text-2xl font-bold text-white w-8 text-center">
-                              {index + 1}
-                              {isLeader && '🏆'}
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-white font-semibold text-lg">
-                                {player.name}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div
-                                className={`text-2xl font-bold ${
-                                  isLeader ? 'text-yellow-300' : 'text-white'
-                                }`}
-                              >
-                                {player.total}
-                              </div>
-                              <div className="text-xs text-blue-200">points</div>
-                            </div>
+                            <span className="font-bold">
+                              {index + 1}.
+                            </span>
+                            <span className="flex-1 font-semibold">
+                              {player.name}
+                            </span>
+                            <span className="font-bold">
+                              {player.total} {isLeader && '🏆'}
+                            </span>
                           </div>
                         );
                       })}
                   </div>
                 </div>
               )}
+      
 
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-2 text-center">
