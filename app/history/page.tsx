@@ -183,8 +183,8 @@ export default function GameHistory() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-yellow-300 font-bold text-xl">
-                                {getPositionSuffix(player.avg_position)}
+                              <div className="text-yellow-300 font-bold text-2xl">
+                                {player.avg_position}
                               </div>
                               <div className="text-blue-200 text-xs">avg finish</div>
                             </div>
