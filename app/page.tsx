@@ -549,10 +549,46 @@ export default function Game876Scorer() {
             </>
           ) : (
             <>
-              {leader && currentRoundIndex > 0 && (
-                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-4 mb-6 text-center">
-                  <p className="text-gray-800 font-semibold text-sm mb-1">Current Leader</p>
-                  <p className="text-2xl font-bold text-gray-900">{leader.name}: {leader.total} points</p>
+              {currentRoundIndex > 0 && (
+                <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
+                  <h3 className="text-2xl font-bold text-white mb-4 text-center">Leaderboard</h3>
+                  <div className="space-y-2">
+                    {[...players]
+                      .sort((a, b) => b.total - a.total)
+                      .map((player, index) => {
+                        const isLeader = index === 0;
+                        return (
+                          <div
+                            key={player.id}
+                            className={`rounded-xl p-4 flex items-center gap-4 ${
+                              isLeader
+                                ? 'bg-gradient-to-r from-yellow-400/20 to-orange-400/20 border-2 border-yellow-400'
+                                : 'bg-white/10'
+                            }`}
+                          >
+                            <div className="text-2xl font-bold text-white w-8 text-center">
+                              {index + 1}
+                              {isLeader && '🏆'}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-white font-semibold text-lg">
+                                {player.name}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div
+                                className={`text-2xl font-bold ${
+                                  isLeader ? 'text-yellow-300' : 'text-white'
+                                }`}
+                              >
+                                {player.total}
+                              </div>
+                              <div className="text-xs text-blue-200">points</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
 
