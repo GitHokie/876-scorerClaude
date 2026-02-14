@@ -592,108 +592,144 @@ export default function Game876Scorer() {
                 </p>
                 
                 <div className="mb-6">
-                  {/* Number Buttons */}
-                  <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
-                    <p className="text-blue-200 text-sm text-center mb-3">
-                      Tap a number to enter {!bidsSubmitted ? 'bid' : 'tricks'}:
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {Array.from({ length: currentCards + 1 }, (_, i) => i).map((num) => (
-                        <button
-                          key={num}
-                          onClick={() => {
-                            const orderedPlayers = getOrderedPlayers();
-                            // Find first player without value
-                            const nextPlayer = orderedPlayers.find(p => 
-                              !bidsSubmitted 
-                                ? tempBids[p.id] === undefined 
-                                : tempTricks[p.id] === undefined || tempTricks[p.id] === 0
-                            );
-                            
-                            if (nextPlayer) {
-                              if (!bidsSubmitted) {
-                                updateBid(nextPlayer.id, num.toString());
-                              } else {
-                                updateTricks(nextPlayer.id, num.toString());
-                              }
-                            }
-                          }}
-                          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-bold text-2xl shadow-lg transition-all active:scale-95"
-                        >
-                          {num}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {!bidsSubmitted ? (
+                    <>
+                      {/* Number Buttons for Bids */}
+                      <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20">
+                        <p className="text-blue-200 text-sm text-center mb-3">
+                          Tap a number to enter bid:
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                          {Array.from({ length: currentCards + 1 }, (_, i) => i).map((num) => (
+                            <button
+                              key={num}
+                              onClick={() => {
+                                const orderedPlayers = getOrderedPlayers();
+                                const nextPlayer = orderedPlayers.find(p => tempBids[p.id] === undefined);
+                                if (nextPlayer) {
+                                  updateBid(nextPlayer.id, num.toString());
+                                }
+                              }}
+                              className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-bold text-2xl shadow-lg transition-all active:scale-95"
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                  {/* Players List */}
-                  <div className="space-y-3">
-                    {getOrderedPlayers().map((player) => {
-                      const isDealer = players.indexOf(player) === dealerIndex;
-                      const hasValue = !bidsSubmitted 
-                        ? tempBids[player.id] !== undefined 
-                        : tempTricks[player.id] !== undefined && tempTricks[player.id] > 0;
-                      
-                      return (
-                        <button
-                          key={player.id}
-                          onClick={() => {
-                            // Clear the value so user can re-enter
-                            if (!bidsSubmitted) {
-                              const newBids = { ...tempBids };
-                              delete newBids[player.id];
-                              setTempBids(newBids);
-                            } else {
-                              const newTricks = { ...tempTricks };
-                              newTricks[player.id] = 0;
-                              setTempTricks(newTricks);
-                            }
-                          }}
-                          className={`w-full rounded-xl p-4 flex items-center gap-4 transition-all ${
-                            hasValue 
-                              ? 'bg-green-500/20 border-2 border-green-400/50 hover:bg-green-500/30' 
-                              : 'bg-white/10 border-2 border-white/20 hover:bg-white/20'
-                          }`}
-                        >
-                          <div className="flex-1 text-left">
-                            <div className="text-white font-semibold text-lg flex items-center gap-2">
-                              {player.name}
-                              {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
-                            </div>
-                            {!bidsSubmitted && tempBids[player.id] !== undefined && (
-                              <div className="text-blue-200 text-sm">Bid: {tempBids[player.id]}</div>
-                            )}
-                            {bidsSubmitted && (
-                              <div className="text-blue-200 text-sm">
-                                Bid: {tempBids[player.id] || 0}
-                                {tempTricks[player.id] !== undefined && tempTricks[player.id] > 0 && (
-                                  <span> • Tricks: {tempTricks[player.id]}</span>
+                      {/* Players List for Bids */}
+                      <div className="space-y-3">
+                        {getOrderedPlayers().map((player) => {
+                          const isDealer = players.indexOf(player) === dealerIndex;
+                          const hasValue = tempBids[player.id] !== undefined;
+
+                          return (
+                            <button
+                              key={player.id}
+                              onClick={() => {
+                                const newBids = { ...tempBids };
+                                delete newBids[player.id];
+                                setTempBids(newBids);
+                              }}
+                              className={`w-full rounded-xl p-4 flex items-center gap-4 transition-all ${
+                                hasValue
+                                  ? 'bg-green-500/20 border-2 border-green-400/50 hover:bg-green-500/30'
+                                  : 'bg-white/10 border-2 border-white/20 hover:bg-white/20'
+                              }`}
+                            >
+                              <div className="flex-1 text-left">
+                                <div className="text-white font-semibold text-lg flex items-center gap-2">
+                                  {player.name}
+                                  {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
+                                </div>
+                                {tempBids[player.id] !== undefined && (
+                                  <div className="text-blue-200 text-sm">Bid: {tempBids[player.id]}</div>
+                                )}
+                                {hasValue && (
+                                  <div className="text-green-300 text-xs mt-1 italic">
+                                    Tap to edit
+                                  </div>
                                 )}
                               </div>
-                            )}
-                            {hasValue && (
-                              <div className="text-green-300 text-xs mt-1 italic">
-                                Tap to edit
+
+                              {hasValue ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-white font-bold text-2xl">
+                                    {tempBids[player.id]}
+                                  </span>
+                                  <CheckCircle className="text-green-400" size={24} />
+                                </div>
+                              ) : (
+                                <div className="text-blue-200 text-sm">
+                                  Waiting...
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Tricks Entry with +/- Buttons */}
+                      <div className="space-y-3">
+                        {getOrderedPlayers().map((player) => {
+                          const isDealer = players.indexOf(player) === dealerIndex;
+                          const trickCount = tempTricks[player.id] ?? 0;
+                          const atMin = trickCount <= 0;
+                          const atMax = trickCount >= currentCards;
+
+                          return (
+                            <div
+                              key={player.id}
+                              className="w-full rounded-xl p-4 flex items-center gap-4 bg-white/10 border-2 border-white/20"
+                            >
+                              <div className="flex-1 text-left">
+                                <div className="text-white font-semibold text-lg flex items-center gap-2">
+                                  {player.name}
+                                  {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
+                                </div>
+                                <div className="text-blue-200 text-sm">
+                                  Bid: {tempBids[player.id] || 0}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          
-                          {hasValue ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-bold text-2xl">
-                                {!bidsSubmitted ? tempBids[player.id] : tempTricks[player.id]}
-                              </span>
-                              <CheckCircle className="text-green-400" size={24} />
+
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => {
+                                    if (!atMin) {
+                                      setTempTricks({ ...tempTricks, [player.id]: trickCount - 1 });
+                                    }
+                                  }}
+                                  disabled={atMin}
+                                  className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white shadow-lg transition-all active:scale-95"
+                                >
+                                  <Minus size={24} />
+                                </button>
+
+                                <span className="text-white font-bold text-3xl w-10 text-center">
+                                  {trickCount}
+                                </span>
+
+                                <button
+                                  onClick={() => {
+                                    if (!atMax) {
+                                      setTempTricks({ ...tempTricks, [player.id]: trickCount + 1 });
+                                    }
+                                  }}
+                                  disabled={atMax}
+                                  className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white shadow-lg transition-all active:scale-95"
+                                >
+                                  <Plus size={24} />
+                                </button>
+                              </div>
                             </div>
-                          ) : (
-                            <div className="text-blue-200 text-sm">
-                              Waiting...
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {!bidsSubmitted && (
