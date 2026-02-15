@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, RotateCcw, Users, Trophy, CheckCircle, AlertCircle, History, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,6 +38,96 @@ export default function Game876Scorer() {
   const [gameStarted, setGameStarted] = useState(false);
   const [currentGameId, setCurrentGameId] = useState<number | null>(null);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+
+  const previousLeaderIdRef = useRef<number | null>(null);
+
+  const playGoalHorn = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      // Create a buzzing horn-like sound (hockey goal horn)
+      const oscillator1 = audioCtx.createOscillator();
+      const oscillator2 = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator1.type = 'sawtooth';
+      oscillator1.frequency.value = 220;
+      oscillator2.type = 'sawtooth';
+      oscillator2.frequency.value = 277.18;
+
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator1.start(audioCtx.currentTime);
+      oscillator2.start(audioCtx.currentTime);
+      oscillator1.stop(audioCtx.currentTime + 1.5);
+      oscillator2.stop(audioCtx.currentTime + 1.5);
+
+      // After horn, say "Score Update"
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance('Score Update');
+        utterance.rate = 0.9;
+        utterance.pitch = 0.8;
+        window.speechSynthesis.speak(utterance);
+      }, 1600);
+    } catch (error) {
+      console.error('Error playing goal horn:', error);
+    }
+  };
+
+  const playBabyCry = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      for (let i = 0; i < 3; i++) {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sine';
+        const startTime = audioCtx.currentTime + i * 0.4;
+        oscillator.frequency.setValueAtTime(600, startTime);
+        oscillator.frequency.linearRampToValueAtTime(400, startTime + 0.2);
+        oscillator.frequency.linearRampToValueAtTime(600, startTime + 0.35);
+
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.35);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.4);
+      }
+    } catch (error) {
+      console.error('Error playing baby cry:', error);
+    }
+  };
+
+  const renderPlayerName = (name: string): React.ReactNode => {
+    const isChad = name.toLowerCase() === 'chad';
+    return (
+      <>
+        {name}
+        {isChad && (
+          <span
+            className="cursor-pointer ml-1 inline-block"
+            onClick={(e) => {
+              e.stopPropagation();
+              playBabyCry();
+            }}
+            role="button"
+            aria-label="Play crying sound"
+          >
+            😢
+          </span>
+        )}
+      </>
+    );
+  };
 
   useEffect(() => {
     fetchRegisteredPlayers();
@@ -257,6 +347,17 @@ export default function Game876Scorer() {
         };
       });
 
+      // Check for new leader and play goal horn
+      const newLeader = updatedPlayers.reduce((l, p) =>
+        p.total > l.total ? p : l
+      , updatedPlayers[0]);
+
+      if (previousLeaderIdRef.current !== null &&
+          newLeader.id !== previousLeaderIdRef.current) {
+        playGoalHorn();
+      }
+      previousLeaderIdRef.current = newLeader.id;
+
       // Save round to database
       if (currentGameId) {
         try {
@@ -358,8 +459,40 @@ export default function Game876Scorer() {
               <div className="text-center mb-8">
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-8 mb-6">
                   <h2 className="text-4xl font-bold text-gray-900 mb-2">🎉 Game Over! 🎉</h2>
-                  <p className="text-2xl font-bold text-gray-800 mb-4">Winner: {leader?.name}</p>
+                  <p className="text-2xl font-bold text-gray-800 mb-4">Winner: {leader && renderPlayerName(leader.name)}</p>
                   <p className="text-xl text-gray-700">Final Score: {leader?.total} points</p>
+                </div>
+              </div>
+
+              {/* Leaderboard - Names and Totals */}
+              <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-3 text-center">Leaderboard</h3>
+                <div className="space-y-1">
+                  {[...players]
+                    .sort((a, b) => b.total - a.total)
+                    .map((player, index) => {
+                      const isLeader = index === 0;
+                      return (
+                        <div
+                          key={player.id}
+                          className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
+                            isLeader
+                              ? 'bg-yellow-400/20 text-yellow-300'
+                              : 'bg-white/5 text-white'
+                          }`}
+                        >
+                          <span className="font-bold">
+                            {index + 1}.
+                          </span>
+                          <span className="flex-1 font-semibold">
+                            {renderPlayerName(player.name)}
+                          </span>
+                          <span className="font-bold">
+                            {player.total} {isLeader && '🏆'}
+                          </span>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -372,7 +505,7 @@ export default function Game876Scorer() {
                         <th className="px-3 py-2 text-left text-white font-semibold">Round</th>
                         {players.map((player) => (
                           <th key={player.id} className="px-3 py-2 text-center text-white font-semibold">
-                            {player.name}
+                            {renderPlayerName(player.name)}
                           </th>
                         ))}
                       </tr>
@@ -570,7 +703,7 @@ export default function Game876Scorer() {
                               {index + 1}.
                             </span>
                             <span className="flex-1 font-semibold">
-                              {player.name}
+                              {renderPlayerName(player.name)}
                             </span>
                             <span className="font-bold">
                               {player.total} {isLeader && '🏆'}
@@ -581,14 +714,14 @@ export default function Game876Scorer() {
                   </div>
                 </div>
               )}
-      
+
 
               <div className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
                 <h3 className="text-2xl font-bold text-white mb-2 text-center">
                   {!bidsSubmitted ? '📝 Enter Bids' : '🎴 Enter Tricks Taken'}
                 </h3>
                 <p className="text-blue-200 text-center mb-4">
-                  Dealer: <span className="text-yellow-300 font-bold">{players[dealerIndex]?.name}</span>
+                  Dealer: <span className="text-yellow-300 font-bold">{players[dealerIndex] && renderPlayerName(players[dealerIndex].name)}</span>
                 </p>
                 
                 <div className="mb-6">
@@ -640,7 +773,7 @@ export default function Game876Scorer() {
                             >
                               <div className="flex-1 text-left">
                                 <div className="text-white font-semibold text-lg flex items-center gap-2">
-                                  {player.name}
+                                  {renderPlayerName(player.name)}
                                   {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
                                 </div>
                                 {tempBids[player.id] !== undefined && (
@@ -687,7 +820,7 @@ export default function Game876Scorer() {
                             >
                               <div className="flex-1 text-left">
                                 <div className="text-white font-semibold text-lg flex items-center gap-2">
-                                  {player.name}
+                                  {renderPlayerName(player.name)}
                                   {isDealer && <span className="text-yellow-400 text-sm">🃏 Dealer</span>}
                                 </div>
                                 <div className="text-blue-200 text-sm">
@@ -793,7 +926,7 @@ export default function Game876Scorer() {
                           <th className="px-3 py-2 text-left text-white font-semibold">Round</th>
                           {players.map((player) => (
                             <th key={player.id} className="px-3 py-2 text-center text-white font-semibold">
-                              {player.name}
+                              {renderPlayerName(player.name)}
                             </th>
                           ))}
                         </tr>
