@@ -51,6 +51,7 @@ export default function GameHistory() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    fetch('/api/setup-db').catch(() => {});
     fetchData();
   }, []);
 
@@ -60,14 +61,26 @@ export default function GameHistory() {
         fetch('/api/games/history'),
         fetch('/api/games/stats')
       ]);
-      
-      const historyData = await historyResponse.json();
-      const statsData = await statsResponse.json();
-      
-      if (historyResponse.ok && statsResponse.ok) {
+
+      let anyError = false;
+
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json();
         setGames(historyData.games);
+      } else {
+        console.error('Failed to load game history');
+        anyError = true;
+      }
+
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
         setStats(statsData);
       } else {
+        console.error('Failed to load stats');
+        anyError = true;
+      }
+
+      if (anyError && !historyResponse.ok && !statsResponse.ok) {
         setError('Failed to load game history');
       }
     } catch (err) {

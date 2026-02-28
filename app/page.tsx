@@ -130,8 +130,20 @@ export default function Game876Scorer() {
   };
 
   useEffect(() => {
+    initDb();
     fetchRegisteredPlayers();
   }, []);
+
+  const initDb = async () => {
+    try {
+      await Promise.all([
+        fetch('/api/setup-db'),
+        fetch('/api/setup-players-table')
+      ]);
+    } catch (error) {
+      console.error('Error initializing DB:', error);
+    }
+  };
 
   const fetchRegisteredPlayers = async () => {
     try {
@@ -372,7 +384,7 @@ export default function Game876Scorer() {
             };
           });
 
-          await fetch(`/api/games/${currentGameId}/round`, {
+          const roundResponse = await fetch(`/api/games/${currentGameId}/round`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -381,6 +393,11 @@ export default function Game876Scorer() {
               playerResults
             })
           });
+
+          if (!roundResponse.ok) {
+            const err = await roundResponse.json().catch(() => ({}));
+            console.error('Failed to save round:', err);
+          }
         } catch (error) {
           console.error('Error saving round:', error);
         }
@@ -396,11 +413,21 @@ export default function Game876Scorer() {
       // Check if game is complete
       if (nextRound >= roundSequence.length && currentGameId) {
         try {
-          await fetch(`/api/games/${currentGameId}/complete`, {
+          const completeResponse = await fetch(`/api/games/${currentGameId}/complete`, {
             method: 'POST'
           });
+          if (!completeResponse.ok) {
+            console.error('Failed to mark game complete, retrying...');
+            await fetch(`/api/games/${currentGameId}/complete`, { method: 'POST' });
+          }
         } catch (error) {
           console.error('Error completing game:', error);
+          // Retry once on network error
+          try {
+            await fetch(`/api/games/${currentGameId}/complete`, { method: 'POST' });
+          } catch {
+            console.error('Retry failed for completing game');
+          }
         }
       }
     }
