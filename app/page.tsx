@@ -38,6 +38,7 @@ export default function Game876Scorer() {
   const [gameStarted, setGameStarted] = useState(false);
   const [currentGameId, setCurrentGameId] = useState<number | null>(null);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const previousLeaderIdRef = useRef<number | null>(null);
 
@@ -392,6 +393,7 @@ export default function Game876Scorer() {
       setTempBids({});
       setTempTricks({});
       setBidsSubmitted(false);
+      setShowResetConfirm(false);
 
       // Check if game is complete
       if (nextRound >= roundSequence.length && currentGameId) {
@@ -404,6 +406,13 @@ export default function Game876Scorer() {
         }
       }
     }
+  };
+
+  const resetRound = () => {
+    setTempBids({});
+    setTempTricks({});
+    setBidsSubmitted(false);
+    setShowResetConfirm(false);
   };
 
   const resetGame = () => {
@@ -904,14 +913,41 @@ export default function Game876Scorer() {
                       Submit Bids
                     </button>
                   ) : (
-                    <button
-                      onClick={submitRound}
-                      disabled={!tricksValid}
-                      className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg mx-auto text-lg"
-                    >
-                      <CheckCircle size={24} />
-                      Complete Round
-                    </button>
+                    <div className="flex flex-col items-center gap-3">
+                      <button
+                        onClick={submitRound}
+                        disabled={!tricksValid}
+                        className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-lg"
+                      >
+                        <CheckCircle size={24} />
+                        Complete Round
+                      </button>
+                      {showResetConfirm ? (
+                        <div className="flex items-center gap-3">
+                          <span className="text-white text-sm">Reset bids for this round?</span>
+                          <button
+                            onClick={resetRound}
+                            className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-semibold transition-all text-sm"
+                          >
+                            Yes, Reset
+                          </button>
+                          <button
+                            onClick={() => setShowResetConfirm(false)}
+                            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-all text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowResetConfirm(true)}
+                          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-lg font-semibold transition-all flex items-center gap-2 text-sm border border-white/20"
+                        >
+                          <RotateCcw size={16} />
+                          Reset Round
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
